@@ -236,7 +236,7 @@
         </div>
 
         <div class="footer">
-            Data from <a href="https://www.coingecko.com" target="_blank" rel="noopener">CoinGecko</a>
+            Data from <a href="https://www.coincap.io" target="_blank" rel="noopener">CoinCap</a>
         </div>
     </div>
 
@@ -302,11 +302,11 @@
             const minPrice = currentPrice - tolerance;
             const maxPrice = currentPrice + tolerance;
 
-            for (const [timestamp, price] of data) {
-                if (price >= minPrice && price <= maxPrice) {
+            for (const entry of data) {
+                if (entry.price >= minPrice && entry.price <= maxPrice) {
                     return {
-                        date: new Date(timestamp),
-                        price: price
+                        date: new Date(entry.timestamp),
+                        price: entry.price
                     };
                 }
             }
@@ -314,39 +314,143 @@
             return null;
         }
 
-        // Fetch historical data (cached)
+        // Fetch with timeout
+        async function fetchWithTimeout(url, timeout = 10000) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+            try {
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                return response;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                throw error;
+            }
+        }
+
+        // Try multiple APIs with fallback
+        async function tryFetch(attempts) {
+            let lastError;
+
+            for (const attempt of attempts) {
+                try {
+                    const response = await fetchWithTimeout(attempt.url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return attempt.transform(data);
+                    }
+                } catch (error) {
+                    lastError = error;
+                    console.warn(`API attempt failed: ${attempt.url}`, error.message);
+                }
+            }
+
+            throw lastError || new Error('All API attempts failed');
+        }
+
+        // Fetch current price with multiple fallbacks
+        async function fetchCurrentPrice() {
+            return tryFetch([
+                {
+                    // CoinCap API (has CORS headers)
+                    url: 'https://api.coincap.io/v2/assets/bitcoin',
+                    transform: (data) => ({
+                        price: parseFloat(data.data.priceUsd),
+                        change24h: parseFloat(data.data.changePercent24Hr) || 0
+                    })
+                },
+                {
+                    // Coinbase API (also CORS-friendly)
+                    url: 'https://api.coinbase.com/v2/prices/BTC-USD/spot',
+                    transform: (data) => ({
+                        price: parseFloat(data.data.amount),
+                        change24h: 0 // Coinbase spot doesn't include 24h change
+                    })
+                },
+                {
+                    // Blockchain.info (CORS-friendly)
+                    url: 'https://blockchain.info/ticker',
+                    transform: (data) => ({
+                        price: data.USD.last,
+                        change24h: 0
+                    })
+                }
+            ]);
+        }
+
+        // Fetch historical data with caching and fallbacks
         async function fetchHistoricalData() {
             if (historicalData) return historicalData;
 
-            const response = await fetch(
-                'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=max&interval=daily'
-            );
+            // CoinCap historical API - fetch max data (going back to 2010)
+            // We need to make multiple requests to get full history
+            const endTime = Date.now();
+            const startTime = new Date('2010-07-17').getTime(); // Bitcoin's first recorded price
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch historical data');
+            try {
+                // CoinCap allows max 2000 data points per request with daily interval
+                // For full history, we fetch in chunks
+                const allData = [];
+                let currentEnd = endTime;
+                const msPerDay = 24 * 60 * 60 * 1000;
+                const chunkSize = 2000 * msPerDay;
+
+                // Fetch data in reverse chronological order (most recent first)
+                // We'll fetch up to ~14 years of data
+                while (currentEnd > startTime && allData.length < 6000) {
+                    const currentStart = Math.max(currentEnd - chunkSize, startTime);
+
+                    const url = `https://api.coincap.io/v2/assets/bitcoin/history?interval=d1&start=${currentStart}&end=${currentEnd}`;
+
+                    const response = await fetchWithTimeout(url, 15000);
+
+                    if (!response.ok) {
+                        throw new Error(`CoinCap API error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.data && data.data.length > 0) {
+                        // Transform to our format
+                        const chunk = data.data.map(d => ({
+                            timestamp: d.time,
+                            price: parseFloat(d.priceUsd)
+                        }));
+
+                        allData.unshift(...chunk);
+                    }
+
+                    // Move window back
+                    currentEnd = currentStart - msPerDay;
+
+                    // Small delay to avoid rate limiting
+                    await new Promise(r => setTimeout(r, 100));
+                }
+
+                // Sort by timestamp ascending (oldest first)
+                allData.sort((a, b) => a.timestamp - b.timestamp);
+
+                // Remove duplicates
+                const seen = new Set();
+                historicalData = allData.filter(d => {
+                    const day = new Date(d.timestamp).toDateString();
+                    if (seen.has(day)) return false;
+                    seen.add(day);
+                    return true;
+                });
+
+                console.log(`Loaded ${historicalData.length} days of historical data`);
+                return historicalData;
+
+            } catch (error) {
+                console.error('Failed to fetch historical data:', error);
+                throw new Error('Could not load historical price data');
             }
-
-            const data = await response.json();
-            historicalData = data.prices;
-            return historicalData;
-        }
-
-        // Fetch current price
-        async function fetchCurrentPrice() {
-            const response = await fetch(
-                'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true'
-            );
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch current price');
-            }
-
-            return response.json();
         }
 
         // Update the UI
         function updateUI(currentPrice, change24h, matchData) {
-            const changeClass = change24h >= 0 ? 'positive' : 'negative';
             const changeSign = change24h >= 0 ? '+' : '';
 
             let dejaVuContent;
@@ -399,10 +503,10 @@
         }
 
         // Set loading state
-        function setLoading(isLoading) {
+        function setLoading(isLoading, message = 'Updating...') {
             if (isLoading) {
                 statusDot.className = 'status-dot loading';
-                statusText.textContent = 'Updating...';
+                statusText.textContent = message;
             } else {
                 statusDot.className = 'status-dot';
                 lastUpdate = new Date();
@@ -413,24 +517,21 @@
         // Main refresh function
         async function refresh() {
             try {
-                setLoading(true);
+                setLoading(true, 'Fetching current price...');
 
-                const [priceData, history] = await Promise.all([
-                    fetchCurrentPrice(),
-                    fetchHistoricalData()
-                ]);
+                const priceData = await fetchCurrentPrice();
 
-                const currentPrice = priceData.bitcoin.usd;
-                const change24h = priceData.bitcoin.usd_24h_change || 0;
+                setLoading(true, 'Loading historical data...');
+                const history = await fetchHistoricalData();
 
-                const matchData = findFirstPriceMatch(currentPrice, history);
+                const matchData = findFirstPriceMatch(priceData.price, history);
 
-                updateUI(currentPrice, change24h, matchData);
+                updateUI(priceData.price, priceData.change24h, matchData);
                 setLoading(false);
 
             } catch (error) {
                 console.error('Error:', error);
-                showError('Could not fetch Bitcoin data. Please try again.');
+                showError(error.message || 'Could not fetch Bitcoin data. Please try again.');
             }
         }
 
