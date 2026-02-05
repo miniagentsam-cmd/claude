@@ -334,7 +334,8 @@
 
             log('Fetching history...');
             try {
-                const res = await fetch('https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=2000&toTs=' + Math.floor(Date.now()/1000));
+                // Use allData=true to get full BTC history back to 2010
+                const res = await fetch('https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&allData=true');
                 log('CryptoCompare status: ' + res.status);
                 if (res.ok) {
                     const json = await res.json();
