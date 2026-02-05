@@ -236,7 +236,7 @@
         </div>
 
         <div class="footer">
-            Data from <a href="https://www.coincap.io" target="_blank" rel="noopener">CoinCap</a> & <a href="https://www.coingecko.com" target="_blank" rel="noopener">CoinGecko</a>
+            Data from <a href="https://www.coincap.io" target="_blank" rel="noopener">CoinCap</a>
         </div>
     </div>
 
@@ -248,289 +248,177 @@
         let historicalData = null;
         let lastUpdate = null;
 
-        // Format price with commas
         function formatPrice(price) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(price);
+            return '$' + Math.round(price).toLocaleString('en-US');
         }
 
-        // Format date nicely
         function formatDate(date) {
-            return new Intl.DateTimeFormat('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            }).format(date);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         }
 
-        // Calculate time difference
         function getTimeDifference(pastDate) {
             const now = new Date();
             const past = new Date(pastDate);
-
             let years = now.getFullYear() - past.getFullYear();
             let months = now.getMonth() - past.getMonth();
             let days = now.getDate() - past.getDate();
 
-            if (days < 0) {
-                months--;
-                const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-                days += lastMonth.getDate();
-            }
-
-            if (months < 0) {
-                years--;
-                months += 12;
-            }
+            if (days < 0) { months--; days += 30; }
+            if (months < 0) { years--; months += 12; }
 
             const parts = [];
-            if (years > 0) parts.push(`${years} year${years !== 1 ? 's' : ''}`);
-            if (months > 0) parts.push(`${months} month${months !== 1 ? 's' : ''}`);
-            if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
-
+            if (years > 0) parts.push(years + ' year' + (years !== 1 ? 's' : ''));
+            if (months > 0) parts.push(months + ' month' + (months !== 1 ? 's' : ''));
+            if (days > 0) parts.push(days + ' day' + (days !== 1 ? 's' : ''));
             return parts.length > 0 ? parts.join(', ') : 'today';
         }
 
-        // Find the first date BTC hit the current price (within a tolerance)
         function findFirstPriceMatch(currentPrice, data) {
-            // Use a 2% tolerance for price matching
             const tolerance = currentPrice * 0.02;
-            const minPrice = currentPrice - tolerance;
-            const maxPrice = currentPrice + tolerance;
-
             for (const entry of data) {
-                if (entry.price >= minPrice && entry.price <= maxPrice) {
-                    return {
-                        date: new Date(entry.timestamp),
-                        price: entry.price
-                    };
+                if (entry.price >= currentPrice - tolerance && entry.price <= currentPrice + tolerance) {
+                    return { date: new Date(entry.time), price: entry.price };
                 }
             }
-
             return null;
         }
 
-        // Fetch with timeout
-        async function fetchWithTimeout(url, timeout = 10000) {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-            try {
-                const response = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                return response;
-            } catch (error) {
-                clearTimeout(timeoutId);
-                throw error;
-            }
-        }
-
-        // Try multiple APIs with fallback
-        async function tryFetch(attempts) {
-            let lastError;
-
-            for (const attempt of attempts) {
-                try {
-                    const response = await fetchWithTimeout(attempt.url);
-                    if (response.ok) {
-                        const data = await response.json();
-                        return attempt.transform(data);
-                    }
-                } catch (error) {
-                    lastError = error;
-                    console.warn(`API attempt failed: ${attempt.url}`, error.message);
-                }
-            }
-
-            throw lastError || new Error('All API attempts failed');
-        }
-
-        // Fetch current price with multiple fallbacks
         async function fetchCurrentPrice() {
-            return tryFetch([
-                {
-                    // CoinCap API (has CORS headers)
-                    url: 'https://api.coincap.io/v2/assets/bitcoin',
-                    transform: (data) => ({
-                        price: parseFloat(data.data.priceUsd),
-                        change24h: parseFloat(data.data.changePercent24Hr) || 0
-                    })
-                },
-                {
-                    // Coinbase API (also CORS-friendly)
-                    url: 'https://api.coinbase.com/v2/prices/BTC-USD/spot',
-                    transform: (data) => ({
-                        price: parseFloat(data.data.amount),
-                        change24h: 0 // Coinbase spot doesn't include 24h change
-                    })
-                },
-                {
-                    // Blockchain.info (CORS-friendly)
-                    url: 'https://blockchain.info/ticker',
-                    transform: (data) => ({
-                        price: data.USD.last,
-                        change24h: 0
-                    })
+            // Try CoinCap first
+            try {
+                const res = await fetch('https://api.coincap.io/v2/assets/bitcoin');
+                if (res.ok) {
+                    const json = await res.json();
+                    return {
+                        price: parseFloat(json.data.priceUsd),
+                        change24h: parseFloat(json.data.changePercent24Hr) || 0
+                    };
                 }
-            ]);
+            } catch (e) { console.warn('CoinCap failed:', e); }
+
+            // Fallback to Coinbase
+            try {
+                const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
+                if (res.ok) {
+                    const json = await res.json();
+                    return { price: parseFloat(json.data.amount), change24h: 0 };
+                }
+            } catch (e) { console.warn('Coinbase failed:', e); }
+
+            throw new Error('Could not fetch current price');
         }
 
-        // Fetch historical data with caching and CORS proxy fallbacks
         async function fetchHistoricalData() {
             if (historicalData) return historicalData;
 
-            const coingeckoUrl = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=max&interval=daily';
-
-            // CORS proxy options for CoinGecko historical data
-            const attempts = [
-                // Try direct first (sometimes works)
-                coingeckoUrl,
-                // CORS proxies as fallbacks
-                `https://corsproxy.io/?${encodeURIComponent(coingeckoUrl)}`,
-                `https://api.allorigins.win/raw?url=${encodeURIComponent(coingeckoUrl)}`,
-            ];
-
-            let lastError;
-
-            for (const url of attempts) {
-                try {
-                    console.log(`Trying historical data from: ${url.substring(0, 50)}...`);
-                    const response = await fetchWithTimeout(url, 30000);
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-
-                    const data = await response.json();
-
-                    if (data.prices && data.prices.length > 0) {
-                        // Transform CoinGecko format [timestamp, price] to our format
-                        historicalData = data.prices.map(([timestamp, price]) => ({
-                            timestamp,
-                            price
+            // Use CoinCap history - simple single request
+            try {
+                const res = await fetch('https://api.coincap.io/v2/assets/bitcoin/history?interval=d1');
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.data && json.data.length > 0) {
+                        historicalData = json.data.map(d => ({
+                            time: d.time,
+                            price: parseFloat(d.priceUsd)
                         }));
-
-                        console.log(`Loaded ${historicalData.length} days of historical data`);
+                        console.log('Loaded ' + historicalData.length + ' days from CoinCap');
                         return historicalData;
                     }
-                } catch (error) {
-                    console.warn(`Historical data attempt failed: ${error.message}`);
-                    lastError = error;
                 }
+            } catch (e) { console.warn('CoinCap history failed:', e); }
+
+            // Fallback: try CoinGecko via proxy
+            const geckoUrl = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=2000&interval=daily';
+            const proxies = [
+                'https://corsproxy.io/?' + encodeURIComponent(geckoUrl),
+                'https://api.allorigins.win/raw?url=' + encodeURIComponent(geckoUrl)
+            ];
+
+            for (const proxyUrl of proxies) {
+                try {
+                    const res = await fetch(proxyUrl);
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json.prices && json.prices.length > 0) {
+                            historicalData = json.prices.map(p => ({ time: p[0], price: p[1] }));
+                            console.log('Loaded ' + historicalData.length + ' days from CoinGecko proxy');
+                            return historicalData;
+                        }
+                    }
+                } catch (e) { console.warn('Proxy failed:', proxyUrl, e); }
             }
 
-            throw new Error('Could not load historical price data. Please try again.');
+            throw new Error('Could not load historical data');
         }
 
-        // Update the UI
         function updateUI(currentPrice, change24h, matchData) {
             const changeSign = change24h >= 0 ? '+' : '';
-
             let dejaVuContent;
 
             if (matchData) {
                 const timeAgo = getTimeDifference(matchData.date);
-                dejaVuContent = `
-                    <div class="deja-vu-card">
-                        <div class="deja-vu-icon">⏳</div>
-                        <p class="deja-vu-message">
-                            Bitcoin first hit <strong>${formatPrice(currentPrice)}</strong> on
-                            <strong>${formatDate(matchData.date)}</strong>
-                        </p>
-                        <span class="time-ago">${timeAgo} ago</span>
-                    </div>
-                `;
+                dejaVuContent = '<div class="deja-vu-card"><div class="deja-vu-icon">⏳</div>' +
+                    '<p class="deja-vu-message">Bitcoin first hit <strong>' + formatPrice(currentPrice) +
+                    '</strong> on <strong>' + formatDate(matchData.date) + '</strong></p>' +
+                    '<span class="time-ago">' + timeAgo + ' ago</span></div>';
             } else {
-                dejaVuContent = `
-                    <div class="deja-vu-card never-before">
-                        <div class="deja-vu-icon">🚀</div>
-                        <p class="deja-vu-message">
-                            <strong>${formatPrice(currentPrice)}</strong> is uncharted territory!
-                            <br>Bitcoin has never been at this price before.
-                        </p>
-                        <span class="time-ago">Making history</span>
-                    </div>
-                `;
+                dejaVuContent = '<div class="deja-vu-card never-before"><div class="deja-vu-icon">🚀</div>' +
+                    '<p class="deja-vu-message"><strong>' + formatPrice(currentPrice) +
+                    '</strong> is uncharted territory!<br>Bitcoin has never been at this price before.</p>' +
+                    '<span class="time-ago">Making history</span></div>';
             }
 
-            app.innerHTML = `
-                <div class="price-card">
-                    <p class="price-label">Current Bitcoin Price</p>
-                    <p class="price">${formatPrice(currentPrice)}</p>
-                    <p class="price-change">${changeSign}${change24h.toFixed(2)}% (24h)</p>
-                </div>
-                ${dejaVuContent}
-            `;
+            app.innerHTML = '<div class="price-card"><p class="price-label">Current Bitcoin Price</p>' +
+                '<p class="price">' + formatPrice(currentPrice) + '</p>' +
+                '<p class="price-change">' + changeSign + change24h.toFixed(2) + '% (24h)</p></div>' +
+                dejaVuContent;
         }
 
-        // Show error state
         function showError(message) {
-            app.innerHTML = `
-                <div class="price-card error-state">
-                    <p>😵 ${message}</p>
-                    <button onclick="refresh()">Try Again</button>
-                </div>
-            `;
+            app.innerHTML = '<div class="price-card error-state"><p>😵 ' + message + '</p>' +
+                '<button onclick="refresh()">Try Again</button></div>';
             statusDot.className = 'status-dot error';
             statusText.textContent = 'Connection error';
         }
 
-        // Set loading state
-        function setLoading(isLoading, message = 'Updating...') {
+        function setLoading(isLoading, message) {
             if (isLoading) {
                 statusDot.className = 'status-dot loading';
-                statusText.textContent = message;
+                statusText.textContent = message || 'Loading...';
             } else {
                 statusDot.className = 'status-dot';
                 lastUpdate = new Date();
-                statusText.textContent = `Updated ${lastUpdate.toLocaleTimeString()}`;
+                statusText.textContent = 'Updated ' + lastUpdate.toLocaleTimeString();
             }
         }
 
-        // Main refresh function
         async function refresh() {
             try {
-                setLoading(true, 'Fetching current price...');
-
+                setLoading(true, 'Fetching price...');
                 const priceData = await fetchCurrentPrice();
 
-                setLoading(true, 'Loading historical data...');
+                setLoading(true, 'Loading history...');
                 const history = await fetchHistoricalData();
 
                 const matchData = findFirstPriceMatch(priceData.price, history);
-
                 updateUI(priceData.price, priceData.change24h, matchData);
                 setLoading(false);
-
             } catch (error) {
                 console.error('Error:', error);
-                showError(error.message || 'Could not fetch Bitcoin data. Please try again.');
+                showError(error.message || 'Could not fetch data');
             }
         }
 
-        // Update countdown timer
         function updateCountdown() {
             if (!lastUpdate) return;
-
-            const elapsed = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
-            const remaining = 60 - elapsed;
-
+            const remaining = 60 - Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
             if (remaining > 0) {
-                statusText.textContent = `Updated ${lastUpdate.toLocaleTimeString()} · Next update in ${remaining}s`;
+                statusText.textContent = 'Updated ' + lastUpdate.toLocaleTimeString() + ' · Next in ' + remaining + 's';
             }
         }
 
-        // Initialize
         refresh();
-
-        // Auto-refresh every 60 seconds
         setInterval(refresh, 60000);
-
-        // Update countdown every second
         setInterval(updateCountdown, 1000);
     </script>
 </body>
