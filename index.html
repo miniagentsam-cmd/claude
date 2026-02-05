@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BTC Déjà Vu</title>
+    <title>BTC Reality Check</title>
     <style>
         * {
             margin: 0;
@@ -12,158 +12,202 @@
         }
 
         :root {
-            --bg-primary: #0d1117;
-            --bg-secondary: #161b22;
-            --text-primary: #f0f6fc;
-            --text-secondary: #8b949e;
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #141416;
+            --bg-tertiary: #1a1a1d;
+            --text-primary: #f0f0f0;
+            --text-secondary: #888;
             --accent: #f7931a;
-            --accent-glow: rgba(247, 147, 26, 0.3);
+            --red: #ef4444;
+            --green: #22c55e;
+            --border: #2a2a2d;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem;
-            line-height: 1.6;
+            padding: 1rem;
+            line-height: 1.5;
         }
 
         .container {
-            width: 100%;
-            max-width: 480px;
-            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
+        header {
+            text-align: center;
+            padding: 1.5rem 0 2rem;
         }
 
         h1 {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 700;
             margin-bottom: 0.25rem;
-            letter-spacing: -0.02em;
         }
 
         .subtitle {
             color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 2.5rem;
+            font-size: 0.85rem;
         }
 
-        .price-card {
+        .main-card {
             background: var(--bg-secondary);
             border-radius: 1rem;
-            padding: 2rem 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
         }
 
         .price-label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.05em;
             color: var(--text-secondary);
             margin-bottom: 0.5rem;
         }
 
         .price {
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: 700;
             color: var(--accent);
-            text-shadow: 0 0 30px var(--accent-glow);
-            margin-bottom: 0.25rem;
-        }
-
-        @media (max-width: 360px) {
-            .price {
-                font-size: 2.5rem;
-            }
         }
 
         .price-change {
             font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .price-change.positive { color: var(--green); }
+        .price-change.negative { color: var(--red); }
+
+        .reality-box {
+            background: var(--bg-tertiary);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-top: 1.25rem;
+            border-left: 3px solid var(--red);
+        }
+
+        .reality-box.positive {
+            border-left-color: var(--green);
+        }
+
+        .reality-title {
+            font-size: 0.8rem;
             color: var(--text-secondary);
+            margin-bottom: 0.5rem;
         }
 
-        .deja-vu-card {
-            background: linear-gradient(135deg, var(--bg-secondary) 0%, #1a2332 100%);
-            border-radius: 1rem;
-            padding: 2rem 1.5rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(247, 147, 26, 0.2);
+        .reality-message {
+            font-size: 1rem;
+            line-height: 1.6;
         }
 
-        .deja-vu-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        .deja-vu-message {
-            font-size: 1.1rem;
-            line-height: 1.7;
-            margin-bottom: 1rem;
-        }
-
-        .deja-vu-message strong {
+        .reality-message strong {
             color: var(--accent);
         }
 
-        .time-ago {
-            display: inline-block;
-            background: rgba(247, 147, 26, 0.15);
-            color: var(--accent);
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
+        .reality-stat {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+
+        .reality-stat.red { color: var(--red); }
+        .reality-stat.green { color: var(--green); }
+
+        .section-title {
             font-size: 0.9rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ath-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .ath-item {
+            background: var(--bg-secondary);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        .ath-item.longest-drawdown {
+            border-color: var(--red);
+            background: linear-gradient(135deg, var(--bg-secondary), rgba(239, 68, 68, 0.1));
+        }
+
+        .ath-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .ath-year {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .ath-price {
+            color: var(--accent);
             font-weight: 600;
         }
 
-        .status-bar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
+        .ath-date {
             font-size: 0.8rem;
+            color: var(--text-secondary);
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: #238636;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
+        .ath-recovery {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border);
         }
 
-        .status-dot.loading {
-            background: var(--accent);
+        .ath-recovery.underwater {
+            color: var(--red);
         }
 
-        .status-dot.error {
-            background: #f85149;
-            animation: none;
+        .ath-recovery.recovered {
+            color: var(--green);
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .drawdown-badge {
+            display: inline-block;
+            background: var(--red);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 1rem;
+            margin-left: 0.5rem;
         }
 
-        .loading-state {
-            padding: 3rem 1.5rem;
+        .status-bar {
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
         }
 
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--bg-secondary);
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
             border-top-color: var(--accent);
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -174,40 +218,44 @@
             to { transform: rotate(360deg); }
         }
 
-        .error-state {
-            color: #f85149;
-            padding: 2rem;
+        .error {
+            background: var(--bg-secondary);
+            border: 1px solid var(--red);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
         }
 
-        .error-state button {
-            margin-top: 1rem;
+        .error p {
+            color: var(--red);
+            margin-bottom: 1rem;
+        }
+
+        .error .debug {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-align: left;
+            white-space: pre-wrap;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border-radius: 0.5rem;
+        }
+
+        button {
             background: var(--accent);
             color: var(--bg-primary);
             border: none;
             padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
-            font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .error-state button:hover {
-            opacity: 0.9;
-        }
-
-        .never-before {
-            background: linear-gradient(135deg, #238636 0%, #1a7f37 100%);
-            border: 1px solid rgba(35, 134, 54, 0.3);
-        }
-
-        .never-before .deja-vu-icon {
-            color: #3fb950;
         }
 
         .footer {
-            margin-top: 2rem;
-            font-size: 0.75rem;
+            text-align: center;
+            padding: 2rem 0;
+            font-size: 0.7rem;
             color: var(--text-secondary);
         }
 
@@ -219,216 +267,302 @@
 </head>
 <body>
     <div class="container">
-        <div class="logo">₿</div>
-        <h1>BTC Déjà Vu</h1>
-        <p class="subtitle">Have we been here before?</p>
+        <header>
+            <h1>₿ BTC Reality Check</h1>
+            <p class="subtitle">How long have you been waiting?</p>
+        </header>
 
         <div id="app">
-            <div class="price-card loading-state">
+            <div class="loading">
                 <div class="spinner"></div>
-                <p>Fetching Bitcoin data...</p>
+                <p>Loading Bitcoin data...</p>
             </div>
         </div>
 
-        <div class="status-bar">
-            <div class="status-dot loading" id="status-dot"></div>
-            <span id="status-text">Loading...</span>
-        </div>
+        <div class="status-bar" id="status">Loading...</div>
 
         <div class="footer">
-            Data from <a href="https://www.coincap.io" target="_blank" rel="noopener">CoinCap</a>
+            Data from <a href="https://www.cryptocompare.com" target="_blank">CryptoCompare</a> & <a href="https://coinbase.com" target="_blank">Coinbase</a>
         </div>
     </div>
 
     <script>
         const app = document.getElementById('app');
-        const statusDot = document.getElementById('status-dot');
-        const statusText = document.getElementById('status-text');
-
+        const status = document.getElementById('status');
         let historicalData = null;
-        let lastUpdate = null;
         let debugLog = [];
 
         function log(msg) {
             debugLog.push(msg);
-            if (debugLog.length > 10) debugLog.shift();
+            if (debugLog.length > 15) debugLog.shift();
         }
 
         function formatPrice(price) {
-            return '$' + Math.round(price).toLocaleString('en-US');
+            if (price >= 1000) {
+                return '$' + Math.round(price).toLocaleString('en-US');
+            }
+            return '$' + price.toFixed(2);
         }
 
         function formatDate(date) {
-            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
 
-        function getTimeDifference(pastDate) {
-            const now = new Date();
-            const past = new Date(pastDate);
-            let years = now.getFullYear() - past.getFullYear();
-            let months = now.getMonth() - past.getMonth();
-            let days = now.getDate() - past.getDate();
-            if (days < 0) { months--; days += 30; }
-            if (months < 0) { years--; months += 12; }
-            const parts = [];
-            if (years > 0) parts.push(years + ' year' + (years !== 1 ? 's' : ''));
-            if (months > 0) parts.push(months + ' month' + (months !== 1 ? 's' : ''));
-            if (days > 0) parts.push(days + ' day' + (days !== 1 ? 's' : ''));
-            return parts.length > 0 ? parts.join(', ') : 'today';
+        function daysBetween(date1, date2) {
+            return Math.floor((date2 - date1) / (1000 * 60 * 60 * 24));
+        }
+
+        function formatDays(days) {
+            if (days >= 365) {
+                const years = Math.floor(days / 365);
+                const remainingDays = days % 365;
+                if (remainingDays > 30) {
+                    const months = Math.floor(remainingDays / 30);
+                    return years + 'y ' + months + 'mo';
+                }
+                return years + ' year' + (years > 1 ? 's' : '');
+            }
+            return days + ' days';
+        }
+
+        async function fetchCurrentPrice() {
+            log('Fetching price...');
+            try {
+                const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
+                if (res.ok) {
+                    const json = await res.json();
+                    log('Price OK: $' + parseFloat(json.data.amount).toFixed(0));
+                    return parseFloat(json.data.amount);
+                }
+            } catch (e) { log('Coinbase error: ' + e.message); }
+
+            try {
+                const res = await fetch('https://api.coincap.io/v2/assets/bitcoin');
+                if (res.ok) {
+                    const json = await res.json();
+                    return parseFloat(json.data.priceUsd);
+                }
+            } catch (e) { log('CoinCap error: ' + e.message); }
+
+            throw new Error('Could not fetch price');
+        }
+
+        async function fetchHistoricalData() {
+            if (historicalData) return historicalData;
+
+            log('Fetching history...');
+            try {
+                const res = await fetch('https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=2000&toTs=' + Math.floor(Date.now()/1000));
+                log('CryptoCompare status: ' + res.status);
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.Response === 'Success' && json.Data && json.Data.Data) {
+                        historicalData = json.Data.Data.map(d => ({
+                            date: new Date(d.time * 1000),
+                            price: d.close,
+                            high: d.high
+                        })).filter(d => d.price > 0);
+                        log('History OK: ' + historicalData.length + ' days');
+                        return historicalData;
+                    }
+                }
+            } catch (e) { log('History error: ' + e.message); }
+
+            throw new Error('Could not fetch history');
         }
 
         function findFirstPriceMatch(currentPrice, data) {
             const tolerance = currentPrice * 0.02;
             for (const entry of data) {
                 if (entry.price >= currentPrice - tolerance && entry.price <= currentPrice + tolerance) {
-                    return { date: new Date(entry.time), price: entry.price };
+                    return entry;
                 }
             }
             return null;
         }
 
-        async function fetchCurrentPrice() {
-            log('Trying CoinCap price...');
-            try {
-                const res = await fetch('https://api.coincap.io/v2/assets/bitcoin');
-                log('CoinCap status: ' + res.status);
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.data && json.data.priceUsd) {
-                        log('CoinCap OK: $' + parseFloat(json.data.priceUsd).toFixed(0));
-                        return {
-                            price: parseFloat(json.data.priceUsd),
-                            change24h: parseFloat(json.data.changePercent24Hr) || 0
-                        };
-                    }
+        function calculateYearlyATHs(data) {
+            const athByYear = {};
+            const now = new Date();
+
+            // Find ATH for each year
+            for (const entry of data) {
+                const year = entry.date.getFullYear();
+                if (!athByYear[year] || entry.high > athByYear[year].price) {
+                    athByYear[year] = {
+                        year: year,
+                        price: entry.high,
+                        date: entry.date
+                    };
                 }
-            } catch (e) { log('CoinCap error: ' + e.message); }
-
-            log('Trying Coinbase price...');
-            try {
-                const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
-                log('Coinbase status: ' + res.status);
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.data && json.data.amount) {
-                        log('Coinbase OK: $' + parseFloat(json.data.amount).toFixed(0));
-                        return { price: parseFloat(json.data.amount), change24h: 0 };
-                    }
-                }
-            } catch (e) { log('Coinbase error: ' + e.message); }
-
-            throw new Error('Price APIs failed');
-        }
-
-        async function fetchHistoricalData() {
-            if (historicalData) {
-                log('Using cached history (' + historicalData.length + ' days)');
-                return historicalData;
             }
 
-            // Try CryptoCompare API (works with CORS, no key needed)
-            log('Trying CryptoCompare...');
-            try {
-                const res = await fetch('https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=2000');
-                log('CryptoCompare status: ' + res.status);
-                if (res.ok) {
-                    const json = await res.json();
-                    log('Response: ' + json.Response);
-                    if (json.Response === 'Success' && json.Data && json.Data.Data) {
-                        historicalData = json.Data.Data.map(d => ({
-                            time: d.time * 1000,  // Convert to milliseconds
-                            price: d.close
-                        }));
-                        log('CryptoCompare OK: ' + historicalData.length + ' days');
-                        return historicalData;
+            // Convert to array and sort
+            const athList = Object.values(athByYear).sort((a, b) => a.year - b.year);
+
+            // Calculate recovery times
+            let runningATH = 0;
+            for (let i = 0; i < athList.length; i++) {
+                const ath = athList[i];
+
+                if (ath.price > runningATH) {
+                    runningATH = ath.price;
+                    ath.wasNewATH = true;
+                }
+
+                // Find when this ATH was surpassed
+                ath.recoveryDays = null;
+                ath.recoveredDate = null;
+
+                for (const entry of data) {
+                    if (entry.date > ath.date && entry.price > ath.price) {
+                        ath.recoveryDays = daysBetween(ath.date, entry.date);
+                        ath.recoveredDate = entry.date;
+                        break;
                     }
                 }
-            } catch (e) { log('CryptoCompare error: ' + e.message); }
 
-            // Fallback: CoinCap history
-            log('Trying CoinCap history...');
-            try {
-                const res = await fetch('https://api.coincap.io/v2/assets/bitcoin/history?interval=d1');
-                log('CoinCap status: ' + res.status);
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.data && json.data.length > 0) {
-                        historicalData = json.data.map(d => ({ time: d.time, price: parseFloat(d.priceUsd) }));
-                        log('CoinCap OK: ' + historicalData.length + ' days');
-                        return historicalData;
-                    }
+                // If not recovered, calculate days since ATH
+                if (!ath.recoveryDays) {
+                    ath.daysUnderwater = daysBetween(ath.date, now);
                 }
-            } catch (e) { log('CoinCap error: ' + e.message); }
+            }
 
-            throw new Error('History APIs failed');
+            return athList;
         }
 
-        function updateUI(currentPrice, change24h, matchData) {
-            const changeSign = change24h >= 0 ? '+' : '';
-            let dejaVuContent;
-            if (matchData) {
-                const timeAgo = getTimeDifference(matchData.date);
-                dejaVuContent = '<div class="deja-vu-card"><div class="deja-vu-icon">⏳</div>' +
-                    '<p class="deja-vu-message">Bitcoin first hit <strong>' + formatPrice(currentPrice) +
-                    '</strong> on <strong>' + formatDate(matchData.date) + '</strong></p>' +
-                    '<span class="time-ago">' + timeAgo + ' ago</span></div>';
+        function findLongestDrawdown(athList) {
+            let longest = null;
+            for (const ath of athList) {
+                const days = ath.recoveryDays || ath.daysUnderwater || 0;
+                if (!longest || days > (longest.recoveryDays || longest.daysUnderwater || 0)) {
+                    longest = ath;
+                }
+            }
+            return longest;
+        }
+
+        function render(currentPrice, history) {
+            const firstMatch = findFirstPriceMatch(currentPrice, history);
+            const athList = calculateYearlyATHs(history);
+            const longestDrawdown = findLongestDrawdown(athList);
+            const now = new Date();
+
+            let daysAtPrice = 0;
+            let firstDate = null;
+            if (firstMatch) {
+                daysAtPrice = daysBetween(firstMatch.date, now);
+                firstDate = firstMatch.date;
+            }
+
+            // Get current ATH
+            const currentATH = Math.max(...history.map(d => d.high));
+            const athEntry = history.find(d => d.high === currentATH);
+            const percentFromATH = ((currentPrice - currentATH) / currentATH * 100).toFixed(1);
+
+            let html = `
+                <div class="main-card">
+                    <div class="price-label">Current Bitcoin Price</div>
+                    <div class="price">${formatPrice(currentPrice)}</div>
+                    <div class="price-change ${parseFloat(percentFromATH) >= 0 ? 'positive' : 'negative'}">
+                        ${percentFromATH}% from ATH (${formatPrice(currentATH)})
+                    </div>
+
+                    <div class="reality-box ${daysAtPrice === 0 ? 'positive' : ''}">
+                        <div class="reality-title">💡 Reality Check</div>
+            `;
+
+            if (firstMatch && daysAtPrice > 30) {
+                html += `
+                    <div class="reality-stat red">${formatDays(daysAtPrice)}</div>
+                    <div class="reality-message">
+                        BTC first hit <strong>${formatPrice(currentPrice)}</strong> on <strong>${formatDate(firstDate)}</strong>.<br>
+                        If you bought then, you've had <strong>0% return</strong> for ${formatDays(daysAtPrice)}.
+                    </div>
+                `;
+            } else if (firstMatch) {
+                html += `
+                    <div class="reality-stat green">New Territory!</div>
+                    <div class="reality-message">
+                        BTC just reached this price level within the last month.
+                    </div>
+                `;
             } else {
-                dejaVuContent = '<div class="deja-vu-card never-before"><div class="deja-vu-icon">🚀</div>' +
-                    '<p class="deja-vu-message"><strong>' + formatPrice(currentPrice) +
-                    '</strong> is uncharted territory!<br>Bitcoin has never been at this price before.</p>' +
-                    '<span class="time-ago">Making history</span></div>';
+                html += `
+                    <div class="reality-stat green">All-Time High Zone!</div>
+                    <div class="reality-message">
+                        This price has never been seen before. You're witnessing history.
+                    </div>
+                `;
             }
-            app.innerHTML = '<div class="price-card"><p class="price-label">Current Bitcoin Price</p>' +
-                '<p class="price">' + formatPrice(currentPrice) + '</p>' +
-                '<p class="price-change">' + changeSign + change24h.toFixed(2) + '% (24h)</p></div>' + dejaVuContent;
+
+            html += `</div></div>`;
+
+            // ATH Timeline
+            html += `<div class="section-title">📊 Yearly All-Time Highs</div>`;
+            html += `<div class="ath-timeline">`;
+
+            // Show last 10 years or so
+            const recentATHs = athList.filter(a => a.year >= 2013);
+
+            for (const ath of recentATHs.reverse()) {
+                const isLongest = longestDrawdown && ath.year === longestDrawdown.year;
+
+                html += `
+                    <div class="ath-item ${isLongest ? 'longest-drawdown' : ''}">
+                        <div class="ath-header">
+                            <span class="ath-year">${ath.year}</span>
+                            <span class="ath-price">${formatPrice(ath.price)}</span>
+                        </div>
+                        <div class="ath-date">Peak: ${formatDate(ath.date)}</div>
+                        <div class="ath-recovery ${ath.recoveryDays ? 'recovered' : 'underwater'}">
+                `;
+
+                if (ath.recoveryDays) {
+                    html += `✓ Surpassed after ${formatDays(ath.recoveryDays)}`;
+                } else if (ath.daysUnderwater) {
+                    html += `⏳ Still waiting... ${formatDays(ath.daysUnderwater)} and counting`;
+                    if (isLongest) {
+                        html += `<span class="drawdown-badge">Longest Wait</span>`;
+                    }
+                }
+
+                html += `</div></div>`;
+            }
+
+            html += `</div>`;
+
+            app.innerHTML = html;
+            status.textContent = 'Updated ' + new Date().toLocaleTimeString() + ' · Refreshes every 60s';
         }
 
         function showError(message) {
-            app.innerHTML = '<div class="price-card error-state"><p>😵 ' + message + '</p>' +
-                '<p style="font-size:0.7rem;margin-top:1rem;color:#8b949e;text-align:left;white-space:pre-wrap;">' +
-                debugLog.join('\n') + '</p>' +
-                '<button onclick="debugLog=[];refresh()">Try Again</button></div>';
-            statusDot.className = 'status-dot error';
-            statusText.textContent = 'Error';
-        }
-
-        function setLoading(isLoading, message) {
-            if (isLoading) {
-                statusDot.className = 'status-dot loading';
-                statusText.textContent = message || 'Loading...';
-            } else {
-                statusDot.className = 'status-dot';
-                lastUpdate = new Date();
-                statusText.textContent = 'Updated ' + lastUpdate.toLocaleTimeString();
-            }
+            app.innerHTML = `
+                <div class="error">
+                    <p>😵 ${message}</p>
+                    <div class="debug">${debugLog.join('\n')}</div>
+                    <button onclick="debugLog=[];refresh()">Try Again</button>
+                </div>
+            `;
+            status.textContent = 'Error loading data';
         }
 
         async function refresh() {
             try {
-                setLoading(true, 'Fetching price...');
-                const priceData = await fetchCurrentPrice();
-                setLoading(true, 'Loading history...');
-                const history = await fetchHistoricalData();
-                const matchData = findFirstPriceMatch(priceData.price, history);
-                updateUI(priceData.price, priceData.change24h, matchData);
-                setLoading(false);
-            } catch (error) {
-                log('FINAL ERROR: ' + error.message);
-                showError(error.message);
-            }
-        }
-
-        function updateCountdown() {
-            if (!lastUpdate) return;
-            const remaining = 60 - Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
-            if (remaining > 0) {
-                statusText.textContent = 'Updated ' + lastUpdate.toLocaleTimeString() + ' · Next in ' + remaining + 's';
+                status.textContent = 'Loading...';
+                const [price, history] = await Promise.all([
+                    fetchCurrentPrice(),
+                    fetchHistoricalData()
+                ]);
+                render(price, history);
+            } catch (e) {
+                log('ERROR: ' + e.message);
+                showError(e.message);
             }
         }
 
         refresh();
         setInterval(refresh, 60000);
-        setInterval(updateCountdown, 1000);
     </script>
 </body>
 </html>
