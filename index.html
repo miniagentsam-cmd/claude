@@ -488,8 +488,7 @@
                         <tr>
                             <th>Year</th>
                             <th>ATH</th>
-                            <th>Return</th>
-                            <th>CAGR</th>
+                            <th>Returns</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -501,15 +500,24 @@
                 const yearsHeld = (now - ath.date) / (1000 * 60 * 60 * 24 * 365);
                 const cagr = yearsHeld > 0.1 ? (Math.pow(currentPrice / ath.price, 1 / yearsHeld) - 1) * 100 : 0;
 
-                const returnClass = percentReturn >= 0 ? 'positive' : 'negative';
-                const cagrClass = cagr >= 0 ? 'positive' : 'negative';
+                let returnsDisplay;
+                let returnsClass;
+
+                if (percentReturn >= 0) {
+                    // Profit: show CAGR
+                    returnsClass = 'positive';
+                    returnsDisplay = '+' + cagr.toFixed(1) + '% CAGR';
+                } else {
+                    // Loss: show total % lost
+                    returnsClass = 'negative';
+                    returnsDisplay = percentReturn.toFixed(0) + '%';
+                }
 
                 html += `
                     <tr>
                         <td class="year">${ath.year}</td>
                         <td class="price">${formatPrice(ath.price)}</td>
-                        <td class="${returnClass}">${percentReturn >= 0 ? '+' : ''}${percentReturn.toFixed(0)}%</td>
-                        <td class="${cagrClass}">${cagr >= 0 ? '+' : ''}${cagr.toFixed(1)}%</td>
+                        <td class="${returnsClass}">${returnsDisplay}</td>
                     </tr>
                 `;
             }
