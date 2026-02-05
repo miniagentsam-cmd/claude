@@ -342,9 +342,48 @@
                 }
             } catch (e) { log('CoinCap history error: ' + e.message); }
 
-            log('Trying CoinGecko proxy...');
+            log('Trying CoinGecko proxies...');
             const geckoUrl = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=2000&interval=daily';
 
+            // Try allorigins with /get endpoint (returns {contents: "..."})
+            try {
+                const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(geckoUrl);
+                log('Proxy: allorigins/get');
+                const res = await fetch(proxyUrl);
+                log('Proxy status: ' + res.status);
+                if (res.ok) {
+                    const wrapper = await res.json();
+                    log('Has contents: ' + (wrapper.contents ? 'yes' : 'no'));
+                    if (wrapper.contents) {
+                        const json = JSON.parse(wrapper.contents);
+                        log('Parsed keys: ' + Object.keys(json).join(','));
+                        if (json.prices && json.prices.length > 0) {
+                            historicalData = json.prices.map(p => ({ time: p[0], price: p[1] }));
+                            log('OK: ' + historicalData.length + ' days');
+                            return historicalData;
+                        }
+                    }
+                }
+            } catch (e) { log('allorigins error: ' + e.message); }
+
+            // Try codetabs proxy
+            try {
+                const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(geckoUrl);
+                log('Proxy: codetabs');
+                const res = await fetch(proxyUrl);
+                log('Proxy status: ' + res.status);
+                if (res.ok) {
+                    const json = await res.json();
+                    log('Keys: ' + Object.keys(json).join(','));
+                    if (json.prices && json.prices.length > 0) {
+                        historicalData = json.prices.map(p => ({ time: p[0], price: p[1] }));
+                        log('OK: ' + historicalData.length + ' days');
+                        return historicalData;
+                    }
+                }
+            } catch (e) { log('codetabs error: ' + e.message); }
+
+            // Try corsproxy.io
             try {
                 const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(geckoUrl);
                 log('Proxy: corsproxy.io');
@@ -354,26 +393,11 @@
                     const json = await res.json();
                     if (json.prices && json.prices.length > 0) {
                         historicalData = json.prices.map(p => ({ time: p[0], price: p[1] }));
-                        log('Proxy OK: ' + historicalData.length + ' days');
+                        log('OK: ' + historicalData.length + ' days');
                         return historicalData;
                     }
                 }
-            } catch (e) { log('Proxy error: ' + e.message); }
-
-            try {
-                const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(geckoUrl);
-                log('Proxy: allorigins');
-                const res = await fetch(proxyUrl);
-                log('Proxy status: ' + res.status);
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.prices && json.prices.length > 0) {
-                        historicalData = json.prices.map(p => ({ time: p[0], price: p[1] }));
-                        log('Proxy OK: ' + historicalData.length + ' days');
-                        return historicalData;
-                    }
-                }
-            } catch (e) { log('Proxy error: ' + e.message); }
+            } catch (e) { log('corsproxy error: ' + e.message); }
 
             throw new Error('History APIs failed');
         }
