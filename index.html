@@ -167,6 +167,35 @@
             color: var(--text-secondary);
         }
 
+        .ath-returns {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.75rem;
+            padding: 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 0.5rem;
+        }
+
+        .ath-metric {
+            flex: 1;
+            text-align: center;
+        }
+
+        .ath-metric-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 0.2rem;
+        }
+
+        .ath-metric-value {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .ath-metric-value.positive { color: var(--green); }
+        .ath-metric-value.negative { color: var(--red); }
+
         .ath-recovery {
             font-size: 0.85rem;
             margin-top: 0.5rem;
@@ -508,6 +537,15 @@
             for (const ath of recentATHs.reverse()) {
                 const isLongest = longestDrawdown && ath.year === longestDrawdown.year;
 
+                // Calculate returns
+                const percentReturn = ((currentPrice - ath.price) / ath.price * 100);
+                const yearsHeld = (now - ath.date) / (1000 * 60 * 60 * 24 * 365);
+                // CAGR = (endValue/startValue)^(1/years) - 1
+                const cagr = yearsHeld > 0 ? (Math.pow(currentPrice / ath.price, 1 / yearsHeld) - 1) * 100 : 0;
+
+                const returnClass = percentReturn >= 0 ? 'positive' : 'negative';
+                const cagrClass = cagr >= 0 ? 'positive' : 'negative';
+
                 html += `
                     <div class="ath-item ${isLongest ? 'longest-drawdown' : ''}">
                         <div class="ath-header">
@@ -515,6 +553,20 @@
                             <span class="ath-price">${formatPrice(ath.price)}</span>
                         </div>
                         <div class="ath-date">Peak: ${formatDate(ath.date)}</div>
+                        <div class="ath-returns">
+                            <div class="ath-metric">
+                                <div class="ath-metric-label">Total Return</div>
+                                <div class="ath-metric-value ${returnClass}">${percentReturn >= 0 ? '+' : ''}${percentReturn.toFixed(1)}%</div>
+                            </div>
+                            <div class="ath-metric">
+                                <div class="ath-metric-label">CAGR</div>
+                                <div class="ath-metric-value ${cagrClass}">${cagr >= 0 ? '+' : ''}${cagr.toFixed(1)}%</div>
+                            </div>
+                            <div class="ath-metric">
+                                <div class="ath-metric-label">Years</div>
+                                <div class="ath-metric-value">${yearsHeld.toFixed(1)}</div>
+                            </div>
+                        </div>
                         <div class="ath-recovery ${ath.recoveryDays ? 'recovered' : 'underwater'}">
                 `;
 
