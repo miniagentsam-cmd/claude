@@ -236,7 +236,7 @@
         </div>
 
         <div class="footer">
-            Data from <a href="https://www.coincap.io" target="_blank" rel="noopener">CoinCap</a>
+            Data from <a href="https://www.coincap.io" target="_blank" rel="noopener">CoinCap</a> & <a href="https://www.coingecko.com" target="_blank" rel="noopener">CoinGecko</a>
         </div>
     </div>
 
@@ -379,74 +379,51 @@
             ]);
         }
 
-        // Fetch historical data with caching and fallbacks
+        // Fetch historical data with caching and CORS proxy fallbacks
         async function fetchHistoricalData() {
             if (historicalData) return historicalData;
 
-            // CoinCap historical API - fetch max data (going back to 2010)
-            // We need to make multiple requests to get full history
-            const endTime = Date.now();
-            const startTime = new Date('2010-07-17').getTime(); // Bitcoin's first recorded price
+            const coingeckoUrl = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=max&interval=daily';
 
-            try {
-                // CoinCap allows max 2000 data points per request with daily interval
-                // For full history, we fetch in chunks
-                const allData = [];
-                let currentEnd = endTime;
-                const msPerDay = 24 * 60 * 60 * 1000;
-                const chunkSize = 2000 * msPerDay;
+            // CORS proxy options for CoinGecko historical data
+            const attempts = [
+                // Try direct first (sometimes works)
+                coingeckoUrl,
+                // CORS proxies as fallbacks
+                `https://corsproxy.io/?${encodeURIComponent(coingeckoUrl)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(coingeckoUrl)}`,
+            ];
 
-                // Fetch data in reverse chronological order (most recent first)
-                // We'll fetch up to ~14 years of data
-                while (currentEnd > startTime && allData.length < 6000) {
-                    const currentStart = Math.max(currentEnd - chunkSize, startTime);
+            let lastError;
 
-                    const url = `https://api.coincap.io/v2/assets/bitcoin/history?interval=d1&start=${currentStart}&end=${currentEnd}`;
-
-                    const response = await fetchWithTimeout(url, 15000);
+            for (const url of attempts) {
+                try {
+                    console.log(`Trying historical data from: ${url.substring(0, 50)}...`);
+                    const response = await fetchWithTimeout(url, 30000);
 
                     if (!response.ok) {
-                        throw new Error(`CoinCap API error: ${response.status}`);
+                        throw new Error(`HTTP ${response.status}`);
                     }
 
                     const data = await response.json();
 
-                    if (data.data && data.data.length > 0) {
-                        // Transform to our format
-                        const chunk = data.data.map(d => ({
-                            timestamp: d.time,
-                            price: parseFloat(d.priceUsd)
+                    if (data.prices && data.prices.length > 0) {
+                        // Transform CoinGecko format [timestamp, price] to our format
+                        historicalData = data.prices.map(([timestamp, price]) => ({
+                            timestamp,
+                            price
                         }));
 
-                        allData.unshift(...chunk);
+                        console.log(`Loaded ${historicalData.length} days of historical data`);
+                        return historicalData;
                     }
-
-                    // Move window back
-                    currentEnd = currentStart - msPerDay;
-
-                    // Small delay to avoid rate limiting
-                    await new Promise(r => setTimeout(r, 100));
+                } catch (error) {
+                    console.warn(`Historical data attempt failed: ${error.message}`);
+                    lastError = error;
                 }
-
-                // Sort by timestamp ascending (oldest first)
-                allData.sort((a, b) => a.timestamp - b.timestamp);
-
-                // Remove duplicates
-                const seen = new Set();
-                historicalData = allData.filter(d => {
-                    const day = new Date(d.timestamp).toDateString();
-                    if (seen.has(day)) return false;
-                    seen.add(day);
-                    return true;
-                });
-
-                console.log(`Loaded ${historicalData.length} days of historical data`);
-                return historicalData;
-
-            } catch (error) {
-                console.error('Failed to fetch historical data:', error);
-                throw new Error('Could not load historical price data');
             }
+
+            throw new Error('Could not load historical price data. Please try again.');
         }
 
         // Update the UI
