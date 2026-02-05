@@ -127,98 +127,51 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .ath-timeline {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+        .ath-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
         }
 
-        .ath-item {
-            background: var(--bg-secondary);
-            border-radius: 0.75rem;
-            padding: 1rem;
-            border: 1px solid var(--border);
-        }
-
-        .ath-item.longest-drawdown {
-            border-color: var(--red);
-            background: linear-gradient(135deg, var(--bg-secondary), rgba(239, 68, 68, 0.1));
-        }
-
-        .ath-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .ath-year {
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .ath-price {
-            color: var(--accent);
+        .ath-table th {
+            text-align: left;
+            padding: 0.75rem 0.5rem;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
             font-weight: 600;
         }
 
-        .ath-date {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
+        .ath-table th:last-child,
+        .ath-table td:last-child {
+            text-align: right;
         }
 
-        .ath-returns {
-            display: flex;
-            gap: 1rem;
-            margin-top: 0.75rem;
-            padding: 0.5rem;
-            background: var(--bg-tertiary);
-            border-radius: 0.5rem;
+        .ath-table td {
+            padding: 0.6rem 0.5rem;
+            border-bottom: 1px solid var(--border);
         }
 
-        .ath-metric {
-            flex: 1;
-            text-align: center;
+        .ath-table tr:hover {
+            background: var(--bg-secondary);
         }
 
-        .ath-metric-label {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            margin-bottom: 0.2rem;
+        .ath-table .year {
+            font-weight: 600;
         }
 
-        .ath-metric-value {
-            font-size: 1rem;
-            font-weight: 700;
-        }
-
-        .ath-metric-value.positive { color: var(--green); }
-        .ath-metric-value.negative { color: var(--red); }
-
-        .ath-recovery {
+        .ath-table .price {
+            color: var(--accent);
             font-size: 0.85rem;
-            margin-top: 0.5rem;
-            padding-top: 0.5rem;
-            border-top: 1px solid var(--border);
         }
 
-        .ath-recovery.underwater {
-            color: var(--red);
-        }
-
-        .ath-recovery.recovered {
+        .ath-table .positive {
             color: var(--green);
         }
 
-        .drawdown-badge {
-            display: inline-block;
-            background: var(--red);
-            color: white;
-            font-size: 0.7rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 1rem;
-            margin-left: 0.5rem;
+        .ath-table .negative {
+            color: var(--red);
         }
 
         .status-bar {
@@ -527,62 +480,41 @@
 
             html += `</div></div>`;
 
-            // ATH Timeline
-            html += `<div class="section-title">📊 Yearly All-Time Highs</div>`;
-            html += `<div class="ath-timeline">`;
+            // ATH Table
+            html += `<div class="section-title">📊 If You Bought the ATH Each Year</div>`;
+            html += `
+                <table class="ath-table">
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>ATH</th>
+                            <th>Return</th>
+                            <th>CAGR</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
 
-            // Show last 10 years or so
-            const recentATHs = athList.filter(a => a.year >= 2013);
-
-            for (const ath of recentATHs.reverse()) {
-                const isLongest = longestDrawdown && ath.year === longestDrawdown.year;
-
-                // Calculate returns
+            // Show all years from data, oldest first
+            for (const ath of athList) {
                 const percentReturn = ((currentPrice - ath.price) / ath.price * 100);
                 const yearsHeld = (now - ath.date) / (1000 * 60 * 60 * 24 * 365);
-                // CAGR = (endValue/startValue)^(1/years) - 1
-                const cagr = yearsHeld > 0 ? (Math.pow(currentPrice / ath.price, 1 / yearsHeld) - 1) * 100 : 0;
+                const cagr = yearsHeld > 0.1 ? (Math.pow(currentPrice / ath.price, 1 / yearsHeld) - 1) * 100 : 0;
 
                 const returnClass = percentReturn >= 0 ? 'positive' : 'negative';
                 const cagrClass = cagr >= 0 ? 'positive' : 'negative';
 
                 html += `
-                    <div class="ath-item ${isLongest ? 'longest-drawdown' : ''}">
-                        <div class="ath-header">
-                            <span class="ath-year">${ath.year}</span>
-                            <span class="ath-price">${formatPrice(ath.price)}</span>
-                        </div>
-                        <div class="ath-date">Peak: ${formatDate(ath.date)}</div>
-                        <div class="ath-returns">
-                            <div class="ath-metric">
-                                <div class="ath-metric-label">Total Return</div>
-                                <div class="ath-metric-value ${returnClass}">${percentReturn >= 0 ? '+' : ''}${percentReturn.toFixed(1)}%</div>
-                            </div>
-                            <div class="ath-metric">
-                                <div class="ath-metric-label">CAGR</div>
-                                <div class="ath-metric-value ${cagrClass}">${cagr >= 0 ? '+' : ''}${cagr.toFixed(1)}%</div>
-                            </div>
-                            <div class="ath-metric">
-                                <div class="ath-metric-label">Years</div>
-                                <div class="ath-metric-value">${yearsHeld.toFixed(1)}</div>
-                            </div>
-                        </div>
-                        <div class="ath-recovery ${ath.recoveryDays ? 'recovered' : 'underwater'}">
+                    <tr>
+                        <td class="year">${ath.year}</td>
+                        <td class="price">${formatPrice(ath.price)}</td>
+                        <td class="${returnClass}">${percentReturn >= 0 ? '+' : ''}${percentReturn.toFixed(0)}%</td>
+                        <td class="${cagrClass}">${cagr >= 0 ? '+' : ''}${cagr.toFixed(1)}%</td>
+                    </tr>
                 `;
-
-                if (ath.recoveryDays) {
-                    html += `✓ Surpassed after ${formatDays(ath.recoveryDays)}`;
-                } else if (ath.daysUnderwater) {
-                    html += `⏳ Still waiting... ${formatDays(ath.daysUnderwater)} and counting`;
-                    if (isLongest) {
-                        html += `<span class="drawdown-badge">Longest Wait</span>`;
-                    }
-                }
-
-                html += `</div></div>`;
             }
 
-            html += `</div>`;
+            html += `</tbody></table>`;
 
             app.innerHTML = html;
             status.textContent = 'Updated ' + new Date().toLocaleTimeString() + ' · Refreshes every 60s';
