@@ -326,78 +326,39 @@
                 return historicalData;
             }
 
+            // Try CryptoCompare API (works with CORS, no key needed)
+            log('Trying CryptoCompare...');
+            try {
+                const res = await fetch('https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=2000');
+                log('CryptoCompare status: ' + res.status);
+                if (res.ok) {
+                    const json = await res.json();
+                    log('Response: ' + json.Response);
+                    if (json.Response === 'Success' && json.Data && json.Data.Data) {
+                        historicalData = json.Data.Data.map(d => ({
+                            time: d.time * 1000,  // Convert to milliseconds
+                            price: d.close
+                        }));
+                        log('CryptoCompare OK: ' + historicalData.length + ' days');
+                        return historicalData;
+                    }
+                }
+            } catch (e) { log('CryptoCompare error: ' + e.message); }
+
+            // Fallback: CoinCap history
             log('Trying CoinCap history...');
             try {
                 const res = await fetch('https://api.coincap.io/v2/assets/bitcoin/history?interval=d1');
-                log('CoinCap history status: ' + res.status);
+                log('CoinCap status: ' + res.status);
                 if (res.ok) {
                     const json = await res.json();
                     if (json.data && json.data.length > 0) {
                         historicalData = json.data.map(d => ({ time: d.time, price: parseFloat(d.priceUsd) }));
-                        log('CoinCap history OK: ' + historicalData.length + ' days');
-                        return historicalData;
-                    } else {
-                        log('CoinCap history empty');
-                    }
-                }
-            } catch (e) { log('CoinCap history error: ' + e.message); }
-
-            log('Trying CoinGecko proxies...');
-            const geckoUrl = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=2000&interval=daily';
-
-            // Try allorigins with /get endpoint (returns {contents: "..."})
-            try {
-                const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(geckoUrl);
-                log('Proxy: allorigins/get');
-                const res = await fetch(proxyUrl);
-                log('Proxy status: ' + res.status);
-                if (res.ok) {
-                    const wrapper = await res.json();
-                    log('Has contents: ' + (wrapper.contents ? 'yes' : 'no'));
-                    if (wrapper.contents) {
-                        const json = JSON.parse(wrapper.contents);
-                        log('Parsed keys: ' + Object.keys(json).join(','));
-                        if (json.prices && json.prices.length > 0) {
-                            historicalData = json.prices.map(p => ({ time: p[0], price: p[1] }));
-                            log('OK: ' + historicalData.length + ' days');
-                            return historicalData;
-                        }
-                    }
-                }
-            } catch (e) { log('allorigins error: ' + e.message); }
-
-            // Try codetabs proxy
-            try {
-                const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(geckoUrl);
-                log('Proxy: codetabs');
-                const res = await fetch(proxyUrl);
-                log('Proxy status: ' + res.status);
-                if (res.ok) {
-                    const json = await res.json();
-                    log('Keys: ' + Object.keys(json).join(','));
-                    if (json.prices && json.prices.length > 0) {
-                        historicalData = json.prices.map(p => ({ time: p[0], price: p[1] }));
-                        log('OK: ' + historicalData.length + ' days');
+                        log('CoinCap OK: ' + historicalData.length + ' days');
                         return historicalData;
                     }
                 }
-            } catch (e) { log('codetabs error: ' + e.message); }
-
-            // Try corsproxy.io
-            try {
-                const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(geckoUrl);
-                log('Proxy: corsproxy.io');
-                const res = await fetch(proxyUrl);
-                log('Proxy status: ' + res.status);
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.prices && json.prices.length > 0) {
-                        historicalData = json.prices.map(p => ({ time: p[0], price: p[1] }));
-                        log('OK: ' + historicalData.length + ' days');
-                        return historicalData;
-                    }
-                }
-            } catch (e) { log('corsproxy error: ' + e.message); }
+            } catch (e) { log('CoinCap error: ' + e.message); }
 
             throw new Error('History APIs failed');
         }
