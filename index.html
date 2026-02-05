@@ -421,8 +421,8 @@
                     <tbody>
             `;
 
-            // Show all years from data, oldest first
-            for (const ath of athList) {
+            // Show years from 2013 onwards
+            for (const ath of athList.filter(a => a.year >= 2013)) {
                 const percentReturn = ((currentPrice - ath.price) / ath.price * 100);
                 const yearsHeld = (now - ath.date) / (1000 * 60 * 60 * 24 * 365);
                 const cagr = yearsHeld > 0.1 ? (Math.pow(currentPrice / ath.price, 1 / yearsHeld) - 1) * 100 : 0;
