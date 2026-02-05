@@ -83,42 +83,6 @@
         .price-change.positive { color: var(--green); }
         .price-change.negative { color: var(--red); }
 
-        .reality-box {
-            background: var(--bg-tertiary);
-            border-radius: 0.75rem;
-            padding: 1.25rem;
-            margin-top: 1.25rem;
-            border-left: 3px solid var(--red);
-        }
-
-        .reality-box.positive {
-            border-left-color: var(--green);
-        }
-
-        .reality-title {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-        }
-
-        .reality-message {
-            font-size: 1rem;
-            line-height: 1.6;
-        }
-
-        .reality-message strong {
-            color: var(--accent);
-        }
-
-        .reality-stat {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin: 0.5rem 0;
-        }
-
-        .reality-stat.red { color: var(--red); }
-        .reality-stat.green { color: var(--green); }
-
         .section-title {
             font-size: 0.9rem;
             font-weight: 600;
@@ -251,7 +215,7 @@
     <div class="container">
         <header>
             <h1>₿ BTC Reality Check</h1>
-            <p class="subtitle">How long have you been waiting?</p>
+            <p class="subtitle">Returns from all time highs</p>
         </header>
 
         <div id="app">
@@ -426,21 +390,11 @@
         }
 
         function render(currentPrice, history) {
-            const firstMatch = findFirstPriceMatch(currentPrice, history);
             const athList = calculateYearlyATHs(history);
-            const longestDrawdown = findLongestDrawdown(athList);
             const now = new Date();
-
-            let daysAtPrice = 0;
-            let firstDate = null;
-            if (firstMatch) {
-                daysAtPrice = daysBetween(firstMatch.date, now);
-                firstDate = firstMatch.date;
-            }
 
             // Get current ATH
             const currentATH = Math.max(...history.map(d => d.high));
-            const athEntry = history.find(d => d.high === currentATH);
             const percentFromATH = ((currentPrice - currentATH) / currentATH * 100).toFixed(1);
 
             let html = `
@@ -450,36 +404,8 @@
                     <div class="price-change ${parseFloat(percentFromATH) >= 0 ? 'positive' : 'negative'}">
                         ${percentFromATH}% from ATH (${formatPrice(currentATH)})
                     </div>
-
-                    <div class="reality-box ${daysAtPrice === 0 ? 'positive' : ''}">
-                        <div class="reality-title">💡 Reality Check</div>
+                </div>
             `;
-
-            if (firstMatch && daysAtPrice > 30) {
-                html += `
-                    <div class="reality-stat red">${formatDays(daysAtPrice)}</div>
-                    <div class="reality-message">
-                        BTC first hit <strong>${formatPrice(currentPrice)}</strong> on <strong>${formatDate(firstDate)}</strong>.<br>
-                        If you bought then, you've had <strong>0% return</strong> for ${formatDays(daysAtPrice)}.
-                    </div>
-                `;
-            } else if (firstMatch) {
-                html += `
-                    <div class="reality-stat green">New Territory!</div>
-                    <div class="reality-message">
-                        BTC just reached this price level within the last month.
-                    </div>
-                `;
-            } else {
-                html += `
-                    <div class="reality-stat green">All-Time High Zone!</div>
-                    <div class="reality-message">
-                        This price has never been seen before. You're witnessing history.
-                    </div>
-                `;
-            }
-
-            html += `</div></div>`;
 
             // ATH Table
             html += `<div class="section-title">📊 If You Bought the ATH Each Year</div>`;
